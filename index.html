@@ -553,7 +553,7 @@
             }
             
             // 클릭 가능한 링크로 표시
-            websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">홈페이지 바로 가기</a>`;
+            websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">🔗 홈페이지 바로 가기 →</a>`;
             websiteItem.style.display = 'flex';
         } else {
             // 웹사이트 정보가 없으면 해당 항목 전체를 숨김
@@ -575,11 +575,23 @@
     function goToMain() { showPage('mainPage'); }
     function goToResults() { showPage('resultsPage'); }
     function makeCall() {
-        if (currentBusiness && currentBusiness.phone && currentBusiness.phone !== '정보 없음') {
-            alert(`전화: ${currentBusiness.phone}`);
-        } else {
+        if (!currentBusiness || !currentBusiness.phone || currentBusiness.phone === '정보 없음') {
             alert('전화번호 정보가 없습니다.');
+            return;
         }
+        
+        // 전화번호에서 특수문자 제거 (-, 공백 등)
+        const cleanPhone = currentBusiness.phone.replace(/[^0-9+]/g, '');
+        const telURL = `tel:${cleanPhone}`;
+        
+        console.log('📞 전화 걸기:', telURL);
+        
+        // 동적으로 <a> 태그 생성하여 클릭
+        const link = document.createElement('a');
+        link.href = telURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
     }
     function openMap() {
         if (!currentBusiness) {
@@ -592,46 +604,52 @@
         console.log('비즈니스 이름:', currentBusiness.name);
         console.log('P열 (googleMapsUrl):', currentBusiness.googleMapsUrl);
         console.log('E열 (address):', currentBusiness.address);
-        console.log('전체 데이터:', currentBusiness);
         console.log('================================');
         
         // ✅ P열 URL 확인 (스프레드시트 헤더: googleMapsUrl)
-        // 우선순위: googleMapsUrl > googleMapsURL > 기타 fallback
-        const mapURL = currentBusiness.googleMapsUrl ||      // 정확한 필드명 (소문자 l) - 최우선!
-                       currentBusiness.googleMapsURL ||      // 대문자 L 버전
+        const mapURL = currentBusiness.googleMapsUrl ||
+                       currentBusiness.googleMapsURL ||
                        currentBusiness.mapURL || 
                        currentBusiness.directions || 
                        currentBusiness.map;
         
-        console.log('✅ 최종 선택된 mapURL:', mapURL);
+        let finalURL = null;
         
         if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
             // URL 정규화 (프로토콜 추가)
             let normalizedURL = mapURL.trim();
             
-            // http://로 시작하면 https://로 변경
-            if (normalizedURL.toLowerCase().startsWith('http://')) {
-                normalizedURL = 'https://' + normalizedURL.substring(7);
-            }
-            // https://가 없으면 자동으로 추가
-            else if (!normalizedURL.toLowerCase().startsWith('https://')) {
+            if (!normalizedURL.toLowerCase().startsWith('http://') && 
+                !normalizedURL.toLowerCase().startsWith('https://')) {
                 normalizedURL = 'https://' + normalizedURL;
             }
             
-            console.log('✅ P열 URL 사용:', normalizedURL);
-            // 새 창에서 길찾기 URL 열기
-            window.open(normalizedURL, '_blank');
+            finalURL = normalizedURL;
+            console.log('✅ P열 URL 사용:', finalURL);
         } 
-        // P열에 URL이 없으면 주소로 구글맵 검색
+        // P열이 없으면 주소로 구글맵 검색
         else if (currentBusiness.address && currentBusiness.address !== '정보 없음') {
             console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
             const encodedAddress = encodeURIComponent(currentBusiness.address);
-            const fallbackURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-            console.log('📍 Fallback URL:', fallbackURL);
-            window.open(fallbackURL, '_blank');
-        } 
-        else {
-            console.error('❌ P열과 E열 모두 비어있습니다.');
+            finalURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            console.log('📍 Fallback URL:', finalURL);
+        }
+        
+        if (finalURL) {
+            // [해결책] 동적으로 <a> 태그 생성하여 클릭
+            // 이 방법은 브라우저가 사용자의 실제 클릭으로 인식하여 차단하지 않음
+            // PC와 모바일 모두에서 새 탭으로 안정적으로 열림
+            const link = document.createElement('a');
+            link.href = finalURL;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer'; // 보안 강화
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('🚀 새 탭에서 열기:', finalURL);
+        } else {
+            console.error('❌ 길찾기 정보가 없습니다.');
             alert('길찾기 정보가 없습니다.');
         }
     }
