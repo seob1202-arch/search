@@ -97,24 +97,7 @@
             text-decoration: underline; 
         }
         .action-buttons { display: flex; gap: 12px; margin: 20px 0; }
-        
-        /* ========== [CSS 수정] ========== */
-        /* <a> 태그도 버튼처럼 보이게 스타일 추가 */
-        .action-btn { 
-            flex: 1; 
-            padding: 14px; 
-            border-radius: 8px; 
-            border: none; 
-            font-size: 14px; 
-            font-weight: 600; 
-            cursor: pointer; 
-            /* <a> 태그 스타일링 */
-            text-decoration: none;
-            text-align: center;
-            display: inline-block;
-        }
-        /* ================================ */
-
+        .action-btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
         .action-btn.primary { background: #667eea; color: white; }
         .action-btn.secondary { background: #f0f4ff; color: #667eea; }
         .review { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
@@ -148,10 +131,52 @@
     <div class="loading" id="loading">
         <div class="spinner"></div>
     </div>
-   
+    
     <div class="page" id="mainPage">
-      </div>
-   
+        <div class="main-container">
+            <div class="main-buttons">
+                <button class="main-btn" onclick="goToSearch()">
+                    📍 한인 비즈니스 찾기
+                </button>
+                <button class="main-btn secondary">
+                    💼 무료로 등록하기
+                </button>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number">50+</div>
+                    <div class="stat-label">국가 및 도시</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">11</div>
+                    <div class="stat-label">카테고리</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">100%</div>
+                    <div class="stat-label">무료 서비스</div>
+                </div>
+            </div>
+            
+            <h2 class="featured-title">🔥 인기 비즈니스</h2>
+            <div class="featured-container">
+                <div class="featured-list" id="featuredList">
+                    </div>
+                <div class="scroll-indicator" id="scrollIndicator">
+                    <span class="scroll-dot active"></span>
+                    <span class="scroll-dot"></span>
+                    <span class="scroll-dot"></span>
+                </div>
+            </div>
+
+            <h2 class="featured-title" style="margin-top: 30px;">✨ 신규 비즈니스</h2>
+            <div class="featured-container">
+                <div class="featured-list" id="newList">
+                    </div>
+            </div>
+        </div>
+    </div>
+    
     <div class="page active" id="searchPage">
         <div class="search-header">
             <button class="back-btn" onclick="goToMain()" style="display: none;">←</button>
@@ -172,7 +197,7 @@
             <button class="search-btn" onclick="doSearch()">🔍 검색하기</button>
         </div>
     </div>
-   
+    
     <div class="page" id="resultsPage">
         <div class="results-header">
             <button class="back-btn" onclick="goToSearch()" style="background: #667eea; color: white;">← 다시 검색</button>
@@ -193,7 +218,7 @@
         <div class="business-list" id="businessList">
             </div>
     </div>
-   
+    
     <div class="page" id="detailPage">
         <div class="detail-header">
             <button class="back-btn" onclick="goToResults()">← 뒤로</button>
@@ -226,10 +251,9 @@
             
             <div class="action-buttons">
                 <button class="action-btn primary" onclick="makeCall()">📞 전화</button>
-                <a class="action-btn secondary" id="detailMapLink" href="#" target="_blank" rel="noopener noreferrer">
-                    🗺️ 길찾기
-                </a>
+                <button class="action-btn secondary" onclick="openMap()">🗺️ 길찾기</button>
             </div>
+            
             <div class="info-section">
                 <h3 class="info-title">리뷰</h3>
                 <div id="reviewsList">
@@ -238,10 +262,10 @@
             </div>
         </div>
     </div>
-   
+    
 <script>
     // --- 1. [필수] 1단계에서 복사한 '웹 앱 URL'을 여기에 붙여넣으세요 ---
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzUK5O7nZJSwp9e9UnoAm2w_anNC_iXvzocFejxutf83IjJxgg2FIq5E-fr9InJiLbw/exec';
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbya3GL2Kcy4sMO71OXDdAJIipTQ-UmhIkSR7XV_IILrtrjnFFz6Q-uuZlndY8bkpqMb/exec';
     // -----------------------------------------------------------
 
     // [신규] 카테고리 이름과 매칭되는 이모지 (커스터마이징 가능)
@@ -507,10 +531,9 @@
         renderBusinessList(sortedList);
     }
 
-    // ========== [JavaScript 수정 1/2] ==========
-    // --- 10. 상세 보기 함수 (최종 수정본) ---
+    // --- 10. 상세 보기 함수 (업데이트됨) ---
     function showDetail(biz) {
-        currentBusiness = biz; // makeCall() 함수를 위해 유지
+        currentBusiness = biz;
         document.getElementById('detailName').textContent = biz.name;
         document.getElementById('detailRating').textContent = `⭐ ${biz.rating || 0} (${biz.reviews || 0})`;
         document.getElementById('detailAddress').textContent = biz.address || '정보 없음';
@@ -522,64 +545,19 @@
         const websiteItem = document.getElementById('websiteItem');
         
         if (biz.website && biz.website !== '정보 없음' && biz.website.trim() !== '') {
+            // URL 정규화 (http/https 자동 추가)
             let websiteURL = biz.website.trim();
             if (!websiteURL.toLowerCase().startsWith('http://') && 
                 !websiteURL.toLowerCase().startsWith('https://')) {
                 websiteURL = 'https://' + websiteURL;
             }
+            
+            // 클릭 가능한 링크로 표시
             websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">🔗 홈페이지 바로 가기 →</a>`;
             websiteItem.style.display = 'flex';
         } else {
+            // 웹사이트 정보가 없으면 해당 항목 전체를 숨김
             websiteItem.style.display = 'none';
-        }
-        // ===================================================
-        
-        // ========== [수정됨] 길찾기 <a> 태그 링크 설정 로직 ==========
-        
-        // 1. HTML에서 수정한 <a> 태그를 ID로 찾습니다.
-        const mapLink = document.getElementById('detailMapLink');
-        
-        // 2. P열(googleMapsUrl) 또는 E열(address)을 기반으로 URL을 결정합니다.
-        const mapURL = biz.googleMapsUrl ||
-                       biz.googleMapsURL ||
-                       biz.mapURL || 
-                       biz.directions || 
-                       biz.map;
-        
-        let finalURL = null;
-        
-        if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
-            // 3a. P열 URL이 있는 경우
-            let normalizedURL = mapURL.trim();
-            if (!normalizedURL.toLowerCase().startsWith('http://') && 
-                !normalizedURL.toLowerCase().startsWith('https://')) {
-                normalizedURL = 'https://' + normalizedURL;
-            }
-            finalURL = normalizedURL;
-            console.log('✅ P열 URL 사용:', finalURL);
-        } 
-        else if (biz.address && biz.address !== '정보 없음') {
-            // 3b. P열이 없고 E열 주소로 대체하는 경우 (가장 표준적인 URL로 수정)
-            console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
-            const encodedAddress = encodeURIComponent(biz.address);
-            
-            // [중요!] 가장 표준적이고 절대 차단되지 않는 Google Maps 검색 URL입니다.
-            finalURL = `google.com/maps/{encodedAddress}`;
-            
-            console.log('📍 Fallback URL:', finalURL);
-        }
-        
-        // 4. <a> 태그의 href 속성을 설정합니다.
-        if (finalURL) {
-            mapLink.href = finalURL;
-            mapLink.style.display = ''; // 버튼을 다시 보이게 함
-            mapLink.onclick = null; // 클릭 방지 이벤트 제거
-        } else {
-            // 5. 지도 정보가 아예 없으면 버튼을 숨깁니다.
-            console.error('❌ 길찾기 정보가 없습니다.');
-            mapLink.href = '#';
-            mapLink.style.display = 'none'; // 버튼 숨기기
-            mapLink.onclick = (e) => { e.preventDefault(); alert('길찾기 정보가 없습니다.'); };
         }
         // ===================================================
         
@@ -615,14 +593,69 @@
         link.click();
         document.body.removeChild(link);
     }
-    
-    // ========== [JavaScript 수정 2/2] ==========
-    // openMap() 함수는 더 이상 필요 없으므로 삭제되었습니다.
-    // ===========================================
-
+    function openMap() {
+        if (!currentBusiness) {
+            alert('비즈니스 정보가 없습니다.');
+            return;
+        }
+        
+        // [디버깅] 현재 비즈니스 객체의 P열 관련 필드 출력
+        console.log('=== 🗺️ 길찾기 디버깅 정보 ===');
+        console.log('비즈니스 이름:', currentBusiness.name);
+        console.log('P열 (googleMapsUrl):', currentBusiness.googleMapsUrl);
+        console.log('E열 (address):', currentBusiness.address);
+        console.log('================================');
+        
+        // ✅ P열 URL 확인 (스프레드시트 헤더: googleMapsUrl)
+        const mapURL = currentBusiness.googleMapsUrl ||
+                       currentBusiness.googleMapsURL ||
+                       currentBusiness.mapURL || 
+                       currentBusiness.directions || 
+                       currentBusiness.map;
+        
+        let finalURL = null;
+        
+        if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
+            // URL 정규화 (프로토콜 추가)
+            let normalizedURL = mapURL.trim();
+            
+            if (!normalizedURL.toLowerCase().startsWith('http://') && 
+                !normalizedURL.toLowerCase().startsWith('https://')) {
+                normalizedURL = 'https://' + normalizedURL;
+            }
+            
+            finalURL = normalizedURL;
+            console.log('✅ P열 URL 사용:', finalURL);
+        } 
+        // P열이 없으면 주소로 구글맵 검색
+        else if (currentBusiness.address && currentBusiness.address !== '정보 없음') {
+            console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
+            const encodedAddress = encodeURIComponent(currentBusiness.address);
+            finalURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            console.log('📍 Fallback URL:', finalURL);
+        }
+        
+        if (finalURL) {
+            // [해결책] 동적으로 <a> 태그 생성하여 클릭
+            // 이 방법은 브라우저가 사용자의 실제 클릭으로 인식하여 차단하지 않음
+            // PC와 모바일 모두에서 새 탭으로 안정적으로 열림
+            const link = document.createElement('a');
+            link.href = finalURL;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer'; // 보안 강화
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log('🚀 새 탭에서 열기:', finalURL);
+        } else {
+            console.error('❌ 길찾기 정보가 없습니다.');
+            alert('길찾기 정보가 없습니다.');
+        }
+    }
     function showLoading() { document.getElementById('loading').classList.add('show'); }
     function hideLoading() { document.getElementById('loading').classList.remove('show'); }
-   
+    
     // --- 12. '거리순' 헬퍼 함수 (Geolocation, Haversine) ---
     function requestUserLocation() {
         if (navigator.geolocation) {
