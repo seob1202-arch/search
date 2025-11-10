@@ -59,7 +59,7 @@
         .location-chip { padding: 10px 5px; text-align: center; background: white; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 13px; color: #333; }
         .location-chip.selected { background: #667eea; color: white; border-color: #667eea; }
         .service-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-        .service-item { padding: 12px; background: #f5f5f5; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 13px; color: #333; }
+        .service-item { padding: 12px; background: #f5f5ff; border: 2px solid #e0e0e0; border-radius: 10px; cursor: pointer; font-size: 13px; color: #333; }
         .service-item.selected { background: #667eea; color: white; border-color: #667eea; }
         .search-btn { width: 100%; padding: 16px; background: linear-gradient(135deg, #667eea, #764ba2); border: none; border-radius: 10px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; }
         #resultsPage { background: #f5f5f5; }
@@ -539,7 +539,8 @@
         renderBusinessList(sortedList);
     }
 
-    // --- 10. 상세 보기 함수 (수정됨) ---
+    // ========== [최종 수정된 함수] ==========
+    // --- 10. 상세 보기 함수 (최종 수정본) ---
     function showDetail(biz) {
         currentBusiness = biz; // makeCall() 함수를 위해 유지
         document.getElementById('detailName').textContent = biz.name;
@@ -548,32 +549,27 @@
         document.getElementById('detailPhone').textContent = biz.phone || '정보 없음';
         document.getElementById('detailHours').textContent = biz.hours || '정보 없음';
         
-        // ========== 홈페이지 정보 처리 ==========
+        // ========== 홈페이지 정보 처리 (기존과 동일) ==========
         const websiteElement = document.getElementById('detailWebsite');
         const websiteItem = document.getElementById('websiteItem');
         
         if (biz.website && biz.website !== '정보 없음' && biz.website.trim() !== '') {
-            // URL 정규화 (http/https 자동 추가)
             let websiteURL = biz.website.trim();
             if (!websiteURL.toLowerCase().startsWith('http://') && 
                 !websiteURL.toLowerCase().startsWith('https://')) {
                 websiteURL = 'https://' + websiteURL;
             }
-            
-            // 클릭 가능한 링크로 표시
             websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">홈페이지 바로 가기</a>`;
             websiteItem.style.display = 'flex';
         } else {
-            // 웹사이트 정보가 없으면 해당 항목 전체를 숨김
             websiteItem.style.display = 'none';
         }
         
-        // ========== [신규] 길찾기 <a> 태그 링크 설정 로직 ==========
+        // ========== [수정됨] 길찾기 <a> 태그 링크 설정 로직 ==========
         
-        // 1. HTML에서 수정한 <a> 태그를 ID로 찾습니다.
         const mapLink = document.getElementById('detailMapLink');
         
-        // 2. P열(googleMapsUrl) 또는 E열(address)을 기반으로 URL을 결정합니다.
+        // 1. P열(googleMapsUrl) 확인
         const mapURL = biz.googleMapsUrl ||
                        biz.googleMapsURL ||
                        biz.mapURL || 
@@ -583,7 +579,7 @@
         let finalURL = null;
         
         if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
-            // 3a. P열 URL이 있는 경우
+            // 2a. P열 URL이 있는 경우 (가장 좋음)
             let normalizedURL = mapURL.trim();
             if (!normalizedURL.toLowerCase().startsWith('http://') && 
                 !normalizedURL.toLowerCase().startsWith('https://')) {
@@ -593,24 +589,26 @@
             console.log('✅ P열 URL 사용:', finalURL);
         } 
         else if (biz.address && biz.address !== '정보 없음') {
-            // 3b. P열 URL이 없고, E열 주소로 대체하는 경우
+            // 2b. P열이 없고 E열 주소로 대체하는 경우 (차단 오류 해결)
             console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
             const encodedAddress = encodeURIComponent(biz.address);
-            finalURL = `https://maps.google.com/maps?q=${encodedAddress}`; // 올바른 Fallback URL
+            
+            // [중요!] 이것이 올바른 Google Maps 검색 URL입니다.
+            finalURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            
             console.log('📍 Fallback URL:', finalURL);
         }
         
-        // 4. <a> 태그의 href 속성을 설정합니다.
+        // 3. <a> 태그의 href 속성 설정
         if (finalURL) {
             mapLink.href = finalURL;
             mapLink.style.display = ''; // 버튼을 다시 보이게 함
             mapLink.onclick = null; // 클릭 방지 이벤트 제거
         } else {
-            // 5. 지도 정보가 아예 없으면 버튼을 숨깁니다.
+            // 4. 지도 정보가 아예 없으면 버튼을 숨깁니다.
             console.error('❌ 길찾기 정보가 없습니다.');
             mapLink.href = '#';
             mapLink.style.display = 'none'; // 버튼 숨기기
-            // 클릭 방지 (안전 장치)
             mapLink.onclick = (e) => { e.preventDefault(); alert('길찾기 정보가 없습니다.'); };
         }
         // ===================================================
@@ -619,6 +617,7 @@
         reviewsList.innerHTML = '<div class="review-text">현재 리뷰 정보가 없습니다.</div>';
         showPage('detailPage');
     }
+    // ===========================================
 
     // --- 11. 유틸리티 함수들 (페이지 이동, 액션, 로딩) ---
     function showPage(pageId) {
@@ -650,8 +649,6 @@
 
     // ========== [수정된 부분] ==========
     // openMap() 함수는 더 이상 필요 없으므로 삭제되었습니다.
-    // 해당 로직은 showDetail() 함수로 이동되었습니다.
-    // function openMap() { ... } // <-- 삭제됨
     // ====================================
 
     function showLoading() { document.getElementById('loading').classList.add('show'); }
