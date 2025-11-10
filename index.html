@@ -131,7 +131,7 @@
     <div class="loading" id="loading">
         <div class="spinner"></div>
     </div>
-    
+   
     <div class="page" id="mainPage">
         <div class="main-container">
             <div class="main-buttons">
@@ -176,7 +176,7 @@
             </div>
         </div>
     </div>
-    
+   
     <div class="page active" id="searchPage">
         <div class="search-header">
             <button class="back-btn" onclick="goToMain()" style="display: none;">←</button>
@@ -197,7 +197,7 @@
             <button class="search-btn" onclick="doSearch()">🔍 검색하기</button>
         </div>
     </div>
-    
+   
     <div class="page" id="resultsPage">
         <div class="results-header">
             <button class="back-btn" onclick="goToSearch()" style="background: #667eea; color: white;">← 다시 검색</button>
@@ -218,7 +218,7 @@
         <div class="business-list" id="businessList">
             </div>
     </div>
-    
+   
     <div class="page" id="detailPage">
         <div class="detail-header">
             <button class="back-btn" onclick="goToResults()">← 뒤로</button>
@@ -262,7 +262,7 @@
             </div>
         </div>
     </div>
-    
+   
 <script>
     // --- 1. [필수] 1단계에서 복사한 '웹 앱 URL'을 여기에 붙여넣으세요 ---
     const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbya3GL2Kcy4sMO71OXDdAJIipTQ-UmhIkSR7XV_IILrtrjnFFz6Q-uuZlndY8bkpqMb/exec';
@@ -631,7 +631,14 @@
         else if (currentBusiness.address && currentBusiness.address !== '정보 없음') {
             console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
             const encodedAddress = encodeURIComponent(currentBusiness.address);
-            finalURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            
+            // ================== [수정된 부분] ==================
+            // 기존의 잘못된 `googleusercontent.com` URL을
+            // 올바른 Google Maps 검색 URL로 수정합니다.
+            // 이것이 PC 차단 오류의 원인이었을 가능성이 높습니다.
+            finalURL = `https://maps.google.com/maps?q=${encodedAddress}`;
+            // ===================================================
+
             console.log('📍 Fallback URL:', finalURL);
         }
         
@@ -655,7 +662,7 @@
     }
     function showLoading() { document.getElementById('loading').classList.add('show'); }
     function hideLoading() { document.getElementById('loading').classList.remove('show'); }
-    
+   
     // --- 12. '거리순' 헬퍼 함수 (Geolocation, Haversine) ---
     function requestUserLocation() {
         if (navigator.geolocation) {
