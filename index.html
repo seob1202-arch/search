@@ -97,9 +97,11 @@
             text-decoration: underline; 
         }
         .action-buttons { display: flex; gap: 12px; margin: 20px 0; }
-        .action-btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
+        .action-btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
         .action-btn.primary { background: #667eea; color: white; }
+        .action-btn.primary:hover { background: #5568d3; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(102, 126, 234, 0.3); }
         .action-btn.secondary { background: #f0f4ff; color: #667eea; }
+        .action-btn.secondary:hover { background: #e0e8ff; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(102, 126, 234, 0.2); }
         .review { background: #f8f9fa; padding: 12px; border-radius: 8px; margin-bottom: 10px; }
         .review-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
         .reviewer { font-weight: 600; font-size: 14px; }
@@ -250,8 +252,8 @@
             </div>
             
             <div class="action-buttons">
-                <button class="action-btn primary" onclick="makeCall()">📞 전화</button>
-                <button class="action-btn secondary" onclick="openMap()">🗺️ 길찾기</button>
+                <a class="action-btn primary" id="callBtn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">📞 전화</a>
+                <a class="action-btn secondary" id="mapBtn" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">🗺️ 길찾기</a>
             </div>
             
             <div class="info-section">
@@ -265,7 +267,7 @@
     
 <script>
     // --- 1. [필수] 1단계에서 복사한 '웹 앱 URL'을 여기에 붙여넣으세요 ---
-    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbya3GL2Kcy4sMO71OXDdAJIipTQ-UmhIkSR7XV_IILrtrjnFFz6Q-uuZlndY8bkpqMb/exec';
+    const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzUK5O7nZJSwp9e9UnoAm2w_anNC_iXvzocFejxutf83IjJxgg2FIq5E-fr9InJiLbw/exec';
     // -----------------------------------------------------------
 
     // [신규] 카테고리 이름과 매칭되는 이모지 (커스터마이징 가능)
@@ -540,33 +542,94 @@
         document.getElementById('detailPhone').textContent = biz.phone || '정보 없음';
         document.getElementById('detailHours').textContent = biz.hours || '정보 없음';
         
-        // ========== 홈페이지 정보 처리 (업데이트됨) ==========
+        // ========== 홈페이지 정보 처리 ==========
         const websiteElement = document.getElementById('detailWebsite');
         const websiteItem = document.getElementById('websiteItem');
         
         if (biz.website && biz.website !== '정보 없음' && biz.website.trim() !== '') {
-            // URL 정규화 (http/https 자동 추가)
             let websiteURL = biz.website.trim();
             if (!websiteURL.toLowerCase().startsWith('http://') && 
                 !websiteURL.toLowerCase().startsWith('https://')) {
                 websiteURL = 'https://' + websiteURL;
             }
-            
-            // 클릭 가능한 링크로 표시
-            websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">홈페이지 바로 가기</a>`;
+            websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">🔗 홈페이지 바로 가기 →</a>`;
             websiteItem.style.display = 'flex';
         } else {
-            // 웹사이트 정보가 없으면 해당 항목 전체를 숨김
             websiteItem.style.display = 'none';
         }
-        // ===================================================
+        
+        // ========== 전화 버튼 설정 ==========
+        const callBtn = document.getElementById('callBtn');
+        if (biz.phone && biz.phone !== '정보 없음' && biz.phone.trim() !== '') {
+            const cleanPhone = biz.phone.replace(/[^0-9+]/g, '');
+            callBtn.href = `tel:${cleanPhone}`;
+            callBtn.style.opacity = '1';
+            callBtn.style.pointerEvents = 'auto';
+            console.log('📞 전화번호 설정:', cleanPhone);
+        } else {
+            callBtn.href = '#';
+            callBtn.style.opacity = '0.5';
+            callBtn.style.pointerEvents = 'none';
+            callBtn.onclick = (e) => {
+                e.preventDefault();
+                alert('전화번호 정보가 없습니다.');
+            };
+        }
+        
+        // ========== 길찾기 버튼 설정 ==========
+        const mapBtn = document.getElementById('mapBtn');
+        
+        console.log('=== 🗺️ 길찾기 디버깅 정보 ===');
+        console.log('비즈니스 이름:', biz.name);
+        console.log('P열 (googleMapsUrl):', biz.googleMapsUrl);
+        console.log('E열 (address):', biz.address);
+        console.log('================================');
+        
+        // P열 URL 확인
+        const mapURL = biz.googleMapsUrl ||
+                       biz.googleMapsURL ||
+                       biz.mapURL || 
+                       biz.directions || 
+                       biz.map;
+        
+        let finalMapURL = null;
+        
+        if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
+            let normalizedURL = mapURL.trim();
+            if (!normalizedURL.toLowerCase().startsWith('http://') && 
+                !normalizedURL.toLowerCase().startsWith('https://')) {
+                normalizedURL = 'https://' + normalizedURL;
+            }
+            finalMapURL = normalizedURL;
+            console.log('✅ P열 URL 사용:', finalMapURL);
+        } 
+        else if (biz.address && biz.address !== '정보 없음') {
+            console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
+            const encodedAddress = encodeURIComponent(biz.address);
+            finalMapURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            console.log('📍 Fallback URL:', finalMapURL);
+        }
+        
+        if (finalMapURL) {
+            mapBtn.href = finalMapURL;
+            mapBtn.style.opacity = '1';
+            mapBtn.style.pointerEvents = 'auto';
+        } else {
+            mapBtn.href = '#';
+            mapBtn.style.opacity = '0.5';
+            mapBtn.style.pointerEvents = 'none';
+            mapBtn.onclick = (e) => {
+                e.preventDefault();
+                alert('길찾기 정보가 없습니다.');
+            };
+        }
         
         const reviewsList = document.getElementById('reviewsList');
         reviewsList.innerHTML = '<div class="review-text">현재 리뷰 정보가 없습니다.</div>';
         showPage('detailPage');
     }
 
-    // --- 11. 유틸리티 함수들 (페이지 이동, 액션, 로딩) ---
+    // --- 11. 유틸리티 함수들 (페이지 이동, 로딩) ---
     function showPage(pageId) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
@@ -574,85 +637,6 @@
     function goToSearch() { showPage('searchPage'); }
     function goToMain() { showPage('mainPage'); }
     function goToResults() { showPage('resultsPage'); }
-    function makeCall() {
-        if (!currentBusiness || !currentBusiness.phone || currentBusiness.phone === '정보 없음') {
-            alert('전화번호 정보가 없습니다.');
-            return;
-        }
-        
-        // 전화번호에서 특수문자 제거 (-, 공백 등)
-        const cleanPhone = currentBusiness.phone.replace(/[^0-9+]/g, '');
-        const telURL = `tel:${cleanPhone}`;
-        
-        console.log('📞 전화 걸기:', telURL);
-        
-        // 동적으로 <a> 태그 생성하여 클릭
-        const link = document.createElement('a');
-        link.href = telURL;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-    function openMap() {
-        if (!currentBusiness) {
-            alert('비즈니스 정보가 없습니다.');
-            return;
-        }
-        
-        // [디버깅] 현재 비즈니스 객체의 P열 관련 필드 출력
-        console.log('=== 🗺️ 길찾기 디버깅 정보 ===');
-        console.log('비즈니스 이름:', currentBusiness.name);
-        console.log('P열 (googleMapsUrl):', currentBusiness.googleMapsUrl);
-        console.log('E열 (address):', currentBusiness.address);
-        console.log('================================');
-        
-        // ✅ P열 URL 확인 (스프레드시트 헤더: googleMapsUrl)
-        const mapURL = currentBusiness.googleMapsUrl ||
-                       currentBusiness.googleMapsURL ||
-                       currentBusiness.mapURL || 
-                       currentBusiness.directions || 
-                       currentBusiness.map;
-        
-        let finalURL = null;
-        
-        if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
-            // URL 정규화 (프로토콜 추가)
-            let normalizedURL = mapURL.trim();
-            
-            if (!normalizedURL.toLowerCase().startsWith('http://') && 
-                !normalizedURL.toLowerCase().startsWith('https://')) {
-                normalizedURL = 'https://' + normalizedURL;
-            }
-            
-            finalURL = normalizedURL;
-            console.log('✅ P열 URL 사용:', finalURL);
-        } 
-        // P열이 없으면 주소로 구글맵 검색
-        else if (currentBusiness.address && currentBusiness.address !== '정보 없음') {
-            console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
-            const encodedAddress = encodeURIComponent(currentBusiness.address);
-            finalURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-            console.log('📍 Fallback URL:', finalURL);
-        }
-        
-        if (finalURL) {
-            // [해결책] 동적으로 <a> 태그 생성하여 클릭
-            // 이 방법은 브라우저가 사용자의 실제 클릭으로 인식하여 차단하지 않음
-            // PC와 모바일 모두에서 새 탭으로 안정적으로 열림
-            const link = document.createElement('a');
-            link.href = finalURL;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer'; // 보안 강화
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            console.log('🚀 새 탭에서 열기:', finalURL);
-        } else {
-            console.error('❌ 길찾기 정보가 없습니다.');
-            alert('길찾기 정보가 없습니다.');
-        }
-    }
     function showLoading() { document.getElementById('loading').classList.add('show'); }
     function hideLoading() { document.getElementById('loading').classList.remove('show'); }
     
