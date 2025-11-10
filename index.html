@@ -86,6 +86,16 @@
         .info-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #eee; }
         .info-icon { width: 35px; height: 35px; background: #f0f4ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
         .info-text { flex: 1; font-size: 14px; color: #555; }
+        .info-text a { 
+            color: #667eea; 
+            text-decoration: none; 
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .info-text a:hover { 
+            color: #764ba2; 
+            text-decoration: underline; 
+        }
         .action-buttons { display: flex; gap: 12px; margin: 20px 0; }
         .action-btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-size: 14px; font-weight: 600; cursor: pointer; }
         .action-btn.primary { background: #667eea; color: white; }
@@ -233,7 +243,7 @@
                     <div class="info-icon">🕐</div>
                     <div class="info-text" id="detailHours">...</div>
                 </div>
-                <div class="info-item">
+                <div class="info-item" id="websiteItem">
                     <div class="info-icon">🌐</div>
                     <div class="info-text" id="detailWebsite">...</div>
                 </div>
@@ -521,7 +531,7 @@
         renderBusinessList(sortedList);
     }
 
-    // --- 10. 상세 보기 함수 ---
+    // --- 10. 상세 보기 함수 (업데이트됨) ---
     function showDetail(biz) {
         currentBusiness = biz;
         document.getElementById('detailName').textContent = biz.name;
@@ -529,7 +539,28 @@
         document.getElementById('detailAddress').textContent = biz.address || '정보 없음';
         document.getElementById('detailPhone').textContent = biz.phone || '정보 없음';
         document.getElementById('detailHours').textContent = biz.hours || '정보 없음';
-        document.getElementById('detailWebsite').textContent = biz.website || '정보 없음';
+        
+        // ========== 홈페이지 정보 처리 (업데이트됨) ==========
+        const websiteElement = document.getElementById('detailWebsite');
+        const websiteItem = document.getElementById('websiteItem');
+        
+        if (biz.website && biz.website !== '정보 없음' && biz.website.trim() !== '') {
+            // URL 정규화 (http/https 자동 추가)
+            let websiteURL = biz.website.trim();
+            if (!websiteURL.toLowerCase().startsWith('http://') && 
+                !websiteURL.toLowerCase().startsWith('https://')) {
+                websiteURL = 'https://' + websiteURL;
+            }
+            
+            // 클릭 가능한 링크로 표시
+            websiteElement.innerHTML = `<a href="${websiteURL}" target="_blank">홈페이지 바로 가기</a>`;
+            websiteItem.style.display = 'flex';
+        } else {
+            // 웹사이트 정보가 없으면 해당 항목 전체를 숨김
+            websiteItem.style.display = 'none';
+        }
+        // ===================================================
+        
         const reviewsList = document.getElementById('reviewsList');
         reviewsList.innerHTML = '<div class="review-text">현재 리뷰 정보가 없습니다.</div>';
         showPage('detailPage');
@@ -551,10 +582,41 @@
         }
     }
     function openMap() {
-        if (currentBusiness && currentBusiness.address && currentBusiness.address !== '정보 없음') {
-            alert(`지도: ${currentBusiness.address}`);
-        } else {
-            alert('주소 정보가 없습니다.');
+        if (!currentBusiness) {
+            alert('비즈니스 정보가 없습니다.');
+            return;
+        }
+        
+        // P열 URL 확인 (여러 가능한 필드명 체크)
+        const mapURL = currentBusiness.mapURL || 
+                       currentBusiness.directions || 
+                       currentBusiness.googleMapsURL || 
+                       currentBusiness.map ||
+                       currentBusiness.P;  // P열이 그대로 'P'로 올 수 있음
+        
+        if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
+            // URL 정규화 (프로토콜 추가)
+            let normalizedURL = mapURL.trim();
+            
+            // http://로 시작하면 https://로 변경
+            if (normalizedURL.toLowerCase().startsWith('http://')) {
+                normalizedURL = 'https://' + normalizedURL.substring(7);
+            }
+            // https://가 없으면 자동으로 추가
+            else if (!normalizedURL.toLowerCase().startsWith('https://')) {
+                normalizedURL = 'https://' + normalizedURL;
+            }
+            
+            // 새 창에서 길찾기 URL 열기
+            window.open(normalizedURL, '_blank');
+        } 
+        // P열에 URL이 없으면 주소로 구글맵 검색
+        else if (currentBusiness.address && currentBusiness.address !== '정보 없음') {
+            const encodedAddress = encodeURIComponent(currentBusiness.address);
+            window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+        } 
+        else {
+            alert('길찾기 정보가 없습니다.');
         }
     }
     function showLoading() { document.getElementById('loading').classList.add('show'); }
