@@ -587,12 +587,23 @@
             return;
         }
         
-        // P열 URL 확인 (여러 가능한 필드명 체크)
-        const mapURL = currentBusiness.mapURL || 
+        // [디버깅] 현재 비즈니스 객체의 P열 관련 필드 출력
+        console.log('=== 🗺️ 길찾기 디버깅 정보 ===');
+        console.log('비즈니스 이름:', currentBusiness.name);
+        console.log('P열 (googleMapsUrl):', currentBusiness.googleMapsUrl);
+        console.log('E열 (address):', currentBusiness.address);
+        console.log('전체 데이터:', currentBusiness);
+        console.log('================================');
+        
+        // ✅ P열 URL 확인 (스프레드시트 헤더: googleMapsUrl)
+        // 우선순위: googleMapsUrl > googleMapsURL > 기타 fallback
+        const mapURL = currentBusiness.googleMapsUrl ||      // 정확한 필드명 (소문자 l) - 최우선!
+                       currentBusiness.googleMapsURL ||      // 대문자 L 버전
+                       currentBusiness.mapURL || 
                        currentBusiness.directions || 
-                       currentBusiness.googleMapsURL || 
-                       currentBusiness.map ||
-                       currentBusiness.P;  // P열이 그대로 'P'로 올 수 있음
+                       currentBusiness.map;
+        
+        console.log('✅ 최종 선택된 mapURL:', mapURL);
         
         if (mapURL && mapURL.trim() !== '' && mapURL !== '정보 없음') {
             // URL 정규화 (프로토콜 추가)
@@ -607,15 +618,20 @@
                 normalizedURL = 'https://' + normalizedURL;
             }
             
+            console.log('✅ P열 URL 사용:', normalizedURL);
             // 새 창에서 길찾기 URL 열기
             window.open(normalizedURL, '_blank');
         } 
         // P열에 URL이 없으면 주소로 구글맵 검색
         else if (currentBusiness.address && currentBusiness.address !== '정보 없음') {
+            console.log('⚠️ P열이 비어있어 E열 주소를 사용합니다.');
             const encodedAddress = encodeURIComponent(currentBusiness.address);
-            window.open(`https://www.google.com/maps/search/?api=1&query=${encodedAddress}`, '_blank');
+            const fallbackURL = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
+            console.log('📍 Fallback URL:', fallbackURL);
+            window.open(fallbackURL, '_blank');
         } 
         else {
+            console.error('❌ P열과 E열 모두 비어있습니다.');
             alert('길찾기 정보가 없습니다.');
         }
     }
